@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462299624928",
+    "project_id": "dealzone-c27f6",
+    "storage_bucket": "dealzone-c27f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462299624928:android:014c78ead9602eb590e785",
+        "android_client_info": {
+          "package_name": "uk.ac.tees.mad.dealzone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjmSRtz-E7ZQ-pEv8M5Q7jSR2rAydIgYQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
