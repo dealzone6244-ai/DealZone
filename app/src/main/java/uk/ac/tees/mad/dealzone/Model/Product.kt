@@ -1,11 +1,16 @@
 package uk.ac.tees.mad.dealzone.Model
 
+import com.google.gson.annotations.SerializedName
+
 data class Product(
-    val category: String,
-    val discount: Double,
     val id: Int,
-    val image: String,
+    val title: String,
+    val description: String,
     val price: Double,
+    @SerializedName("discountPercentage")
+    val discount: Double,
     val rating: Double,
-    val title: String
+    val category: String,
+    @SerializedName("thumbnail")
+    val image: String
 )
