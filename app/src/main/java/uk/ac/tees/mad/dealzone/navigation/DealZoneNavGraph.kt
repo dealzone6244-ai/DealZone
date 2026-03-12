@@ -63,7 +63,11 @@ fun DealZoneNavGraph(
         }
 
         composable(Routes.HOME) {
-            androidx.compose.material3.Text("Home Screen — Coming Next")
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val app = context.applicationContext as uk.ac.tees.mad.dealzone.DealZoneApplication
+            val appViewModel: uk.ac.tees.mad.dealzone.viewmodel.AppViewModel = viewModel(
+                factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo)
+            )
         }
 
         composable(Routes.SAVED) {
