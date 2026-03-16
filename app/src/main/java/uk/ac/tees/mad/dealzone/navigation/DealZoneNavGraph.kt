@@ -68,6 +68,7 @@ fun DealZoneNavGraph(
             val appViewModel: uk.ac.tees.mad.dealzone.viewmodel.AppViewModel = viewModel(
                 factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo)
             )
+            uk.ac.tees.mad.dealzone.ui.screens.HomeScreen(viewModel = appViewModel)
         }
 
         composable(Routes.SAVED) {
