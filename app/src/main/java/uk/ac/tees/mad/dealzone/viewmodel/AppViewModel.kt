@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import uk.ac.tees.mad.dealzone.Model.Product
 import uk.ac.tees.mad.dealzone.Model.ResultState
+import uk.ac.tees.mad.dealzone.data.AuthRepository
 import uk.ac.tees.mad.dealzone.domain.Repo.Repo
 
 data class ProductsUiState(
@@ -17,7 +18,10 @@ data class ProductsUiState(
     val errorMessage: String? = null
 )
 
-class AppViewModel(private val repo: Repo) : ViewModel() {
+class AppViewModel(
+    private val repo: Repo,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductsUiState())
     val uiState: StateFlow<ProductsUiState> = _uiState.asStateFlow()
@@ -51,11 +55,18 @@ class AppViewModel(private val repo: Repo) : ViewModel() {
         }
     }
 
-    class Factory(private val repo: Repo) : ViewModelProvider.Factory {
+    fun saveCoupon(product: Product) {
+        val uid = authRepository.currentUser?.uid ?: return
+        viewModelScope.launch {
+            repo.saveCoupon(uid, product)
+        }
+    }
+
+    class Factory(private val repo: Repo, private val authRepository: AuthRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AppViewModel::class.java)) {
-                return AppViewModel(repo) as T
+                return AppViewModel(repo, authRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

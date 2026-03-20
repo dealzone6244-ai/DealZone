@@ -2,17 +2,37 @@ package uk.ac.tees.mad.dealzone.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.runtime.*
+import android.content.Intent
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,13 +46,16 @@ import uk.ac.tees.mad.dealzone.viewmodel.ProductsUiState
 
 @Composable
 fun HomeScreen(
-    viewModel: AppViewModel
+    viewModel: AppViewModel,
+    onNavigateToSaved: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
+ 
     HomeScreenContent(
         uiState = uiState,
-        onRefresh = { viewModel.getProducts() }
+        onRefresh = { viewModel.getProducts() },
+        onNavigateToSaved = onNavigateToSaved,
+        onSaveCoupon = { viewModel.saveCoupon(it) }
     )
 }
 
@@ -40,8 +63,12 @@ fun HomeScreen(
 @Composable
 fun HomeScreenContent(
     uiState: ProductsUiState,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onNavigateToSaved: () -> Unit,
+    onSaveCoupon: (Product) -> Unit
 ) {
+    val context = LocalContext.current
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -49,6 +76,9 @@ fun HomeScreenContent(
                 actions = {
                     IconButton(onClick = onRefresh) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                    IconButton(onClick = onNavigateToSaved) {
+                        Icon(Icons.Default.Bookmark, contentDescription = "Saved Coupons")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -89,64 +119,137 @@ fun HomeScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(uiState.products) { product ->
-                        DealCard(product = product)
+                        DealCard(
+                            product = product,
+                            onSave = { onSaveCoupon(product) },
+                            onShare = {
+                                val sendIntent: Intent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, "Check out this deal: ${product.title}\n${product.description}\nPrice: $${product.price}")
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, null)
+                                context.startActivity(shareIntent)
+                            },
+                            onClick = { selectedProduct = product }
+                        )
                     }
                 }
             }
         }
+
+        selectedProduct?.let { product ->
+            AlertDialog(
+                onDismissRequest = { selectedProduct = null },
+                confirmButton = {
+                    Button(onClick = { 
+                        onSaveCoupon(product)
+                        selectedProduct = null 
+                    }) {
+                        Text("Save Coupon")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { selectedProduct = null }) {
+                        Text("Close")
+                    }
+                },
+                title = { Text(product.title) },
+                text = {
+                    Column {
+                        AsyncImage(
+                            model = product.image,
+                            contentDescription = product.title,
+                            modifier = Modifier.fillMaxWidth().height(150.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Category: ${product.category}")
+                        Text("Rating: ${product.rating} ⭐")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(product.description)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Price: $${product.price}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DealCard(product: Product) {
+fun DealCard(
+    product: Product,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
-            AsyncImage(
-                model = product.image,
-                contentDescription = product.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            Box(modifier = Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = product.image,
+                    contentDescription = product.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(12.dp).align(Alignment.TopStart)
                 ) {
                     Text(
-                        text = product.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        text = "${product.discount}% OFF",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        fontWeight = FontWeight.Bold
                     )
+                }
+                Row(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = MaterialTheme.shapes.small
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
                     ) {
-                        Text(
-                            text = "${product.discount}% OFF",
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                        IconButton(onClick = onShare) {
+                            Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    Surface(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                    ) {
+                        IconButton(onClick = onSave) {
+                            Icon(Icons.Default.FavoriteBorder, "Save", tint = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+            }
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = product.category.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
+                    text = product.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = product.description,
                     style = MaterialTheme.typography.bodyMedium,
@@ -166,11 +269,10 @@ fun DealCard(product: Product) {
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                    Button(
-                        onClick = { /* Grab Deal UI Action */ },
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text("Grab Deal")
+                    TextButton(onClick = onClick) {
+                        Text("View Details")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -207,7 +309,9 @@ fun HomeScreenPreview() {
     DealZoneTheme(darkTheme = false) {
         HomeScreenContent(
             uiState = ProductsUiState(products = mockProducts),
-            onRefresh = {}
+            onRefresh = {},
+            onNavigateToSaved = {},
+            onSaveCoupon = {}
         )
     }
 }
