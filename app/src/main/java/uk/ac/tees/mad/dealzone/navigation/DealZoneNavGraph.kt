@@ -11,7 +11,9 @@ import androidx.navigation.compose.composable
 import uk.ac.tees.mad.dealzone.data.AuthRepository
 import uk.ac.tees.mad.dealzone.ui.screens.AuthScreen
 import uk.ac.tees.mad.dealzone.ui.screens.AuthViewModel
+import uk.ac.tees.mad.dealzone.ui.screens.SavedCouponsScreen
 import uk.ac.tees.mad.dealzone.ui.screens.SplashScreen
+import uk.ac.tees.mad.dealzone.viewmodel.SavedCouponsViewModel
 
 
 @Composable
@@ -66,13 +68,21 @@ fun DealZoneNavGraph(
             val context = androidx.compose.ui.platform.LocalContext.current
             val app = context.applicationContext as uk.ac.tees.mad.dealzone.DealZoneApplication
             val appViewModel: uk.ac.tees.mad.dealzone.viewmodel.AppViewModel = viewModel(
-                factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo)
+                factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo, app.authRepository)
             )
-            uk.ac.tees.mad.dealzone.ui.screens.HomeScreen(viewModel = appViewModel)
+            uk.ac.tees.mad.dealzone.ui.screens.HomeScreen(
+                viewModel = appViewModel,
+                onNavigateToSaved = { navController.navigate(uk.ac.tees.mad.dealzone.navigation.Routes.SAVED) }
+            )
         }
 
         composable(Routes.SAVED) {
-            androidx.compose.material3.Text("Saved Coupons — Coming Next")
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val app = context.applicationContext as uk.ac.tees.mad.dealzone.DealZoneApplication
+            val savedViewModel: SavedCouponsViewModel = viewModel(
+                factory = SavedCouponsViewModel.Factory(app.repo, app.authRepository)
+            )
+            SavedCouponsScreen(viewModel = savedViewModel)
         }
 
         composable(Routes.SETTINGS) {
