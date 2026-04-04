@@ -12,6 +12,7 @@ import uk.ac.tees.mad.dealzone.data.AuthRepository
 import uk.ac.tees.mad.dealzone.ui.screens.AuthScreen
 import uk.ac.tees.mad.dealzone.ui.screens.AuthViewModel
 import uk.ac.tees.mad.dealzone.ui.screens.SavedCouponsScreen
+import uk.ac.tees.mad.dealzone.ui.screens.SettingsScreen
 import uk.ac.tees.mad.dealzone.ui.screens.SplashScreen
 import uk.ac.tees.mad.dealzone.viewmodel.SavedCouponsViewModel
 
@@ -72,7 +73,8 @@ fun DealZoneNavGraph(
             )
             uk.ac.tees.mad.dealzone.ui.screens.HomeScreen(
                 viewModel = appViewModel,
-                onNavigateToSaved = { navController.navigate(uk.ac.tees.mad.dealzone.navigation.Routes.SAVED) }
+                onNavigateToSaved = { navController.navigate(uk.ac.tees.mad.dealzone.navigation.Routes.SAVED) },
+                onNavigateToSettings = { navController.navigate(uk.ac.tees.mad.dealzone.navigation.Routes.SETTINGS) }
             )
         }
 
@@ -86,7 +88,15 @@ fun DealZoneNavGraph(
         }
 
         composable(Routes.SETTINGS) {
-            androidx.compose.material3.Text("Settings — Coming Next")
+            SettingsScreen(
+                onLogout = {
+                    authRepository.signOut()
+                    navController.navigate(Routes.AUTH) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }
