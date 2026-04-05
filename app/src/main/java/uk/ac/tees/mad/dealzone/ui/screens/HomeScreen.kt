@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
@@ -47,7 +48,8 @@ import uk.ac.tees.mad.dealzone.viewmodel.ProductsUiState
 @Composable
 fun HomeScreen(
     viewModel: AppViewModel,
-    onNavigateToSaved: () -> Unit
+    onNavigateToSaved: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
  
@@ -55,6 +57,7 @@ fun HomeScreen(
         uiState = uiState,
         onRefresh = { viewModel.getProducts() },
         onNavigateToSaved = onNavigateToSaved,
+        onNavigateToSettings = onNavigateToSettings,
         onSaveCoupon = { viewModel.saveCoupon(it) }
     )
 }
@@ -65,6 +68,7 @@ fun HomeScreenContent(
     uiState: ProductsUiState,
     onRefresh: () -> Unit,
     onNavigateToSaved: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onSaveCoupon: (Product) -> Unit
 ) {
     val context = LocalContext.current
@@ -79,6 +83,9 @@ fun HomeScreenContent(
                     }
                     IconButton(onClick = onNavigateToSaved) {
                         Icon(Icons.Default.Bookmark, contentDescription = "Saved Coupons")
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -311,6 +318,7 @@ fun HomeScreenPreview() {
             uiState = ProductsUiState(products = mockProducts),
             onRefresh = {},
             onNavigateToSaved = {},
+            onNavigateToSettings = {},
             onSaveCoupon = {}
         )
     }
