@@ -1,6 +1,6 @@
 package uk.ac.tees.mad.dealzone.ui.screens
 
-
+import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -77,7 +77,11 @@ fun AuthScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(DeepCharcoal, Color(0xFF0F1F3D), SurfaceDark)
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.background
+                    )
                 )
             )
     ) {
@@ -128,7 +132,7 @@ fun AuthScreen(
             Text(
                 text  = "DealZone",
                 style = MaterialTheme.typography.displayMedium.copy(
-                    color        = White,
+                    color        = MaterialTheme.colorScheme.onBackground,
                     fontWeight   = FontWeight.ExtraBold,
                     letterSpacing = (-0.5).sp
                 )
@@ -136,7 +140,7 @@ fun AuthScreen(
             Text(
                 text  = "Best deals, every single day",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = White.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
             )
 
@@ -147,8 +151,8 @@ fun AuthScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 shape     = RoundedCornerShape(24.dp),
-                colors    = CardDefaults.cardColors(containerColor = SurfaceDark.copy(alpha = 0.95f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
             ) {
                 Column(
                     modifier            = Modifier.padding(24.dp),
@@ -173,7 +177,7 @@ fun AuthScreen(
                             Text(
                                 text  = if (signIn) "Welcome back!" else "Create account",
                                 style = MaterialTheme.typography.headlineMedium.copy(
-                                    color      = White,
+                                    color      = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
@@ -182,7 +186,7 @@ fun AuthScreen(
                                 text      = if (signIn) "Sign in to access your saved deals"
                                 else "Join to start saving exclusive deals",
                                 style     = MaterialTheme.typography.bodyMedium.copy(
-                                    color = White.copy(alpha = 0.5f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 ),
                                 textAlign = TextAlign.Center
                             )
@@ -272,13 +276,14 @@ fun AuthScreen(
                         shape    = RoundedCornerShape(14.dp),
                         colors   = ButtonDefaults.buttonColors(
                             containerColor         = Orange500,
-                            disabledContainerColor = Orange500.copy(alpha = 0.4f)
+                            disabledContainerColor = Orange500.copy(alpha = 0.4f),
+                            contentColor           = Color.White
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                color       = White,
+                                color       = Color.White,
                                 modifier    = Modifier.size(22.dp),
                                 strokeWidth = 2.5.dp
                             )
@@ -286,7 +291,6 @@ fun AuthScreen(
                             Text(
                                 text  = if (isSignIn) "Sign In" else "Create Account",
                                 style = MaterialTheme.typography.labelLarge.copy(
-                                    color    = White,
                                     fontSize = 16.sp
                                 )
                             )
@@ -299,7 +303,7 @@ fun AuthScreen(
                         Text(
                             text  = if (isSignIn) "Don't have an account? " else "Already have an account? ",
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = White.copy(alpha = 0.5f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         )
                         Text(
@@ -322,7 +326,7 @@ fun AuthScreen(
             Text(
                 text      = "By continuing, you agree to our Terms & Privacy Policy",
                 style     = MaterialTheme.typography.labelMedium.copy(
-                    color     = White.copy(alpha = 0.25f),
+                    color     = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
                     textAlign = TextAlign.Center
                 ),
                 textAlign = TextAlign.Center,
@@ -341,7 +345,7 @@ private fun AuthTabRow(isSignIn: Boolean, onTabChange: (Boolean) -> Unit) {
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(CardDark)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         val indicatorOffset by animateFloatAsState(
             targetValue   = if (isSignIn) 0f else 1f,
@@ -376,7 +380,7 @@ private fun AuthTabRow(isSignIn: Boolean, onTabChange: (Boolean) -> Unit) {
                     Text(
                         text  = label,
                         style = MaterialTheme.typography.labelLarge.copy(
-                            color      = if (selected) White else White.copy(alpha = 0.4f),
+                            color      = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                         )
                     )
@@ -409,7 +413,7 @@ private fun DealZoneTextField(
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = if (isError) ErrorRed else White.copy(alpha = 0.6f)
+                        color = if (isError) ErrorRed else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 )
             },
@@ -426,7 +430,7 @@ private fun DealZoneTextField(
                     Icon(
                         imageVector        = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         contentDescription = if (showPassword) "Hide password" else "Show password",
-                        tint               = White.copy(alpha = 0.5f),
+                        tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier           = Modifier.size(20.dp)
                     )
                 }
@@ -443,14 +447,14 @@ private fun DealZoneTextField(
             shape      = RoundedCornerShape(12.dp),
             colors     = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor      = Orange500,
-                unfocusedBorderColor    = White.copy(alpha = 0.2f),
+                unfocusedBorderColor    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                 errorBorderColor        = ErrorRed,
-                focusedTextColor        = White,
-                unfocusedTextColor      = White.copy(alpha = 0.9f),
-                errorTextColor          = White,
+                focusedTextColor        = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor      = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                errorTextColor          = MaterialTheme.colorScheme.onSurface,
                 cursorColor             = Orange500,
-                focusedContainerColor   = White.copy(alpha = 0.04f),
-                unfocusedContainerColor = White.copy(alpha = 0.02f),
+                focusedContainerColor   = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
                 errorContainerColor     = ErrorRed.copy(alpha = 0.05f)
             )
         )
@@ -489,18 +493,20 @@ private fun ErrorBanner(message: String) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Auth - Sign In")
+@Preview(showBackground = true, showSystemUi = true, name = "Auth - Sign In (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, showSystemUi = true, name = "Auth - Sign In (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun AuthScreenSignInPreview() {
-    DealZoneTheme(darkTheme = true) {
+    DealZoneTheme {
         AuthScreen(uiState = AuthUiState.Idle)
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Auth - Error State")
+@Preview(showBackground = true, showSystemUi = true, name = "Auth - Error State (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, showSystemUi = true, name = "Auth - Error State (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun AuthScreenErrorPreview() {
-    DealZoneTheme(darkTheme = true) {
+    DealZoneTheme {
         AuthScreen(uiState = AuthUiState.Error("Incorrect password. Please try again."))
     }
 }
