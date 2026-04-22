@@ -1,6 +1,10 @@
 package uk.ac.tees.mad.dealzone.ui.screens
 
+import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
@@ -8,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,39 +40,52 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Text(
-                text = "Account",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "Account",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+
+                SettingsItem(
+                    icon = Icons.Default.Person,
+                    title = "Profile Information",
+                    subtitle = "Manage your account details",
+                    onClick = { /* TODO */ }
+                )
+            }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
 
-            SettingsItem(
-                icon = Icons.Default.Person,
-                title = "Profile Information",
-                subtitle = "Manage your account details",
-                onClick = { /* TODO */ }
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "Actions",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
 
-            Divider()
-
-            Text(
-                text = "Actions",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            SettingsItem(
-                icon = Icons.Default.ExitToApp,
-                title = "Logout",
-                subtitle = "Sign out of your account",
-                onClick = onLogout,
-                contentColor = MaterialTheme.colorScheme.error
-            )
+                SettingsItem(
+                    icon = Icons.Default.ExitToApp,
+                    title = "Logout",
+                    subtitle = "Sign out of your account",
+                    onClick = onLogout,
+                    contentColor = MaterialTheme.colorScheme.error,
+                    iconContainerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                    iconContentColor = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }
@@ -78,24 +96,37 @@ fun SettingsItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+    contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    iconContainerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.surfaceVariant,
+    iconContentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        color = androidx.compose.ui.graphics.Color.Transparent
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(vertical = 12.dp),
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(iconContainerColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconContentColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
@@ -104,9 +135,10 @@ fun SettingsItem(
                     color = contentColor,
                     fontWeight = FontWeight.SemiBold
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = contentColor.copy(alpha = 0.6f)
                 )
             }
@@ -114,7 +146,8 @@ fun SettingsItem(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true, name = "Settings - Light", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, showSystemUi = true, name = "Settings - Dark", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun SettingsScreenPreview() {
     DealZoneTheme {
