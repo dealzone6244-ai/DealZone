@@ -1,5 +1,6 @@
 package uk.ac.tees.mad.dealzone.ui.screens
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,8 +28,8 @@ import uk.ac.tees.mad.dealzone.ui.theme.*
 
 @Composable
 fun SplashScreen(
-    onNavigateToHome: () -> Unit        = {},
-    onNavigateToAuth: () -> Unit        = {},
+    onNavigateToHome: () -> Unit           = {},
+    onNavigateToAuth: () -> Unit           = {},
     checkLoginState: suspend () -> Boolean = { false }
 ) {
     val logoScale by rememberInfiniteTransition(label = "pulse")
@@ -62,7 +63,11 @@ fun SplashScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(DeepCharcoal, SurfaceDark, Color(0xFF0A1628))
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.background
+                    )
                 )
             ),
         contentAlignment = Alignment.Center
@@ -129,7 +134,7 @@ fun SplashScreen(
                 style    = TextStyle(
                     fontSize     = 42.sp,
                     fontWeight   = FontWeight.ExtraBold,
-                    color        = White,
+                    color        = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = (-1).sp,
                     shadow       = Shadow(
                         color      = Orange500.copy(alpha = 0.6f),
@@ -145,7 +150,7 @@ fun SplashScreen(
             Text(
                 text      = "Discover · Save · Share",
                 style     = MaterialTheme.typography.bodyMedium.copy(
-                    color         = Orange100.copy(alpha = 0.85f),
+                    color         = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     letterSpacing = 2.sp,
                     fontWeight    = FontWeight.Medium
                 ),
@@ -168,7 +173,7 @@ fun SplashScreen(
             Text(
                 text     = "Loading your deals…",
                 style    = MaterialTheme.typography.labelMedium.copy(
-                    color = White.copy(alpha = 0.4f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
                 ),
                 modifier = Modifier.alpha(dotAlpha.value)
             )
@@ -177,7 +182,7 @@ fun SplashScreen(
         Text(
             text     = "v1.0.0",
             style    = MaterialTheme.typography.labelMedium.copy(
-                color = White.copy(alpha = 0.2f)
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
             ),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -218,10 +223,11 @@ private fun AnimatedDot(delayMs: Int) {
     )
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Splash Screen")
+@Preview(showBackground = true, showSystemUi = true, name = "Splash Screen (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(showBackground = true, showSystemUi = true, name = "Splash Screen (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun SplashScreenPreview() {
-    DealZoneTheme(darkTheme = true) {
+    DealZoneTheme {
         SplashScreen()
     }
 }
