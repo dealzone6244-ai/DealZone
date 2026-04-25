@@ -69,7 +69,7 @@ fun DealZoneNavGraph(
             val context = androidx.compose.ui.platform.LocalContext.current
             val app = context.applicationContext as uk.ac.tees.mad.dealzone.DealZoneApplication
             val appViewModel: uk.ac.tees.mad.dealzone.viewmodel.AppViewModel = viewModel(
-                factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo, app.authRepository)
+                factory = uk.ac.tees.mad.dealzone.viewmodel.AppViewModel.Factory(app.repo, app.authRepository, app.connectivityObserver)
             )
             uk.ac.tees.mad.dealzone.ui.screens.HomeScreen(
                 viewModel = appViewModel,

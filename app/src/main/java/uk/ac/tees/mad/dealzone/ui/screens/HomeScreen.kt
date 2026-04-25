@@ -33,6 +33,9 @@ import uk.ac.tees.mad.dealzone.Model.Product
 import uk.ac.tees.mad.dealzone.ui.theme.DealZoneTheme
 import uk.ac.tees.mad.dealzone.viewmodel.AppViewModel
 import uk.ac.tees.mad.dealzone.viewmodel.ProductsUiState
+import uk.ac.tees.mad.dealzone.util.ConnectivityObserver
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material.icons.filled.WifiOff
 
 @Composable
 fun HomeScreen(
@@ -41,13 +44,18 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
- 
+    val recentlyViewed by viewModel.recentlyViewed.collectAsStateWithLifecycle()
+    val networkStatus by viewModel.networkStatus.collectAsStateWithLifecycle()
+
     HomeScreenContent(
         uiState = uiState,
+        recentlyViewed = recentlyViewed,
+        networkStatus = networkStatus,
         onRefresh = { viewModel.getProducts() },
         onNavigateToSaved = onNavigateToSaved,
         onNavigateToSettings = onNavigateToSettings,
-        onSaveCoupon = { viewModel.saveCoupon(it) }
+        onSaveCoupon = { viewModel.saveCoupon(it) },
+        onProductClick = { viewModel.markProductAsViewed(it) }
     )
 }
 
@@ -55,13 +63,17 @@ fun HomeScreen(
 @Composable
 fun HomeScreenContent(
     uiState: ProductsUiState,
+    recentlyViewed: List<Product>,
+    networkStatus: ConnectivityObserver.Status,
     onRefresh: () -> Unit,
     onNavigateToSaved: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onSaveCoupon: (Product) -> Unit
+    onSaveCoupon: (Product) -> Unit,
+    onProductClick: (Product) -> Unit
 ) {
     val context = LocalContext.current
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -85,133 +97,220 @@ fun HomeScreenContent(
             )
         }
     ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (uiState.errorMessage != null) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+        Column(modifier = Modifier.padding(padding)) {
+            if (networkStatus != ConnectivityObserver.Status.Available) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = uiState.errorMessage ?: "Something went wrong",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onRefresh) {
-                        Text("Retry")
-                    }
-                }
-            } else if (uiState.products.isEmpty()) {
-                Text(
-                    text = "No deals available at the moment.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    items(uiState.products) { product ->
-                        DealCard(
-                            product = product,
-                            onSave = { onSaveCoupon(product) },
-                            onShare = {
-                                val sendIntent: Intent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, "Check out this deal: ${product.title}\n${product.description}\nPrice: $${product.price}")
-                                    type = "text/plain"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, null)
-                                context.startActivity(shareIntent)
-                            },
-                            onClick = { selectedProduct = product }
+                    Row(
+                        modifier = Modifier.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.WifiOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "You are offline. Showing cached deals.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
             }
-        }
-
-        selectedProduct?.let { product ->
-            AlertDialog(
-                onDismissRequest = { selectedProduct = null },
-                shape = RoundedCornerShape(24.dp),
-                containerColor = MaterialTheme.colorScheme.surface,
-                title = { 
-                    Text(
-                        text = product.title, 
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.headlineSmall
-                    ) 
-                },
-                text = {
-                    Column {
-                        AsyncImage(
-                            model = product.image,
-                            contentDescription = product.title,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(180.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (uiState.errorMessage != null) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = uiState.errorMessage ?: "Something went wrong",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Category: ${product.category}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "⭐ ${product.rating}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold
+                        Button(onClick = onRefresh) {
+                            Text("Retry")
+                        }
+                    }
+                } else if (uiState.products.isEmpty()) {
+                    Text(
+                        text = "No deals available at the moment.",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = 16.dp,
+                            bottom = 24.dp,
+                            start = 16.dp,
+                            end = 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        if (recentlyViewed.isNotEmpty()) {
+                            item {
+                                Text(
+                                    "Recently Viewed",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    contentPadding = PaddingValues(bottom = 8.dp)
+                                ) {
+                                    items(recentlyViewed) { product ->
+                                        Card(
+                                            onClick = {
+                                                onProductClick(product)
+                                                selectedProduct = product
+                                            },
+                                            modifier = Modifier.width(160.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                        ) {
+                                            Column {
+                                                AsyncImage(
+                                                    model = product.image,
+                                                    contentDescription = product.title,
+                                                    modifier = Modifier.height(100.dp)
+                                                        .fillMaxWidth(),
+                                                    contentScale = ContentScale.Crop
+                                                )
+                                                Text(
+                                                    text = product.title,
+                                                    modifier = Modifier.padding(8.dp),
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 16.dp),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                                )
+                            }
+                        }
+
+                        items(uiState.products) { product ->
+                            DealCard(
+                                product = product,
+                                onSave = { onSaveCoupon(product) },
+                                onShare = {
+                                    val sendIntent: Intent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(
+                                            Intent.EXTRA_TEXT,
+                                            "Check out this deal: ${product.title}\n${product.description}\nPrice: $${product.price}"
+                                        )
+                                        type = "text/plain"
+                                    }
+                                    val shareIntent = Intent.createChooser(sendIntent, null)
+                                    context.startActivity(shareIntent)
+                                },
+                                onClick = {
+                                    onProductClick(product)
+                                    selectedProduct = product
+                                }
                             )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = product.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Text(
-                            text = "Price: $${product.price}",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { 
-                            onSaveCoupon(product)
-                            selectedProduct = null 
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Save Coupon")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { selectedProduct = null }) {
-                        Text("Close", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     }
                 }
-            )
+            }
+
+            selectedProduct?.let { product ->
+                AlertDialog(
+                    onDismissRequest = { selectedProduct = null },
+                    shape = RoundedCornerShape(24.dp),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    title = {
+                        Text(
+                            text = product.title,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                    },
+                    text = {
+                        Column {
+                            AsyncImage(
+                                model = product.image,
+                                contentDescription = product.title,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Category: ${product.category}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "⭐ ${product.rating}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = product.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Text(
+                                text = "Price: $${product.price}",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                onSaveCoupon(product)
+                                selectedProduct = null
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Save Coupon")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { selectedProduct = null }) {
+                            Text(
+                                "Close",
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -259,13 +358,17 @@ fun DealCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Surface(
-
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                         shadowElevation = 2.dp
                     ) {
                         IconButton(onClick = onShare, modifier = Modifier.size(40.dp)) {
-                            Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Default.Share,
+                                "Share",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                     Surface(
@@ -274,7 +377,12 @@ fun DealCard(
                         shadowElevation = 2.dp
                     ) {
                         IconButton(onClick = onSave, modifier = Modifier.size(40.dp)) {
-                            Icon(Icons.Default.FavoriteBorder, "Save", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Default.FavoriteBorder,
+                                "Save",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
                 }
@@ -314,7 +422,11 @@ fun DealCard(
                     ) {
                         Text("View Details", fontWeight = FontWeight.SemiBold)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
@@ -347,47 +459,74 @@ val mockProducts = listOf(
     )
 )
 
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Populated (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Populated (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "Home - Populated (Light)",
+    uiMode = Configuration.UI_MODE_NIGHT_NO
+)
 @Composable
 fun HomeScreenPreview() {
     DealZoneTheme {
         HomeScreenContent(
             uiState = ProductsUiState(products = mockProducts),
+            recentlyViewed = mockProducts,
+            networkStatus = ConnectivityObserver.Status.Available,
             onRefresh = {},
             onNavigateToSaved = {},
             onNavigateToSettings = {},
-            onSaveCoupon = {}
+            onSaveCoupon = {},
+            onProductClick = {}
         )
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Empty (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Empty (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "Home - Empty (Light)",
+    uiMode = Configuration.UI_MODE_NIGHT_NO
+)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "Home - Empty (Dark)",
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 fun HomeScreenEmptyPreview() {
     DealZoneTheme {
         HomeScreenContent(
             uiState = ProductsUiState(products = emptyList()),
+            recentlyViewed = emptyList(),
+            networkStatus = ConnectivityObserver.Status.Available,
             onRefresh = {},
             onNavigateToSaved = {},
             onNavigateToSettings = {},
-            onSaveCoupon = {}
+            onSaveCoupon = {},
+            onProductClick = {}
         )
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Loading (Light)", uiMode = Configuration.UI_MODE_NIGHT_NO)
-@Preview(showBackground = true, showSystemUi = true, name = "Home - Loading (Dark)", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "Home - Loading (Light)",
+    uiMode = Configuration.UI_MODE_NIGHT_NO
+)
 @Composable
 fun HomeScreenLoadingPreview() {
     DealZoneTheme {
         HomeScreenContent(
             uiState = ProductsUiState(isLoading = true),
+            recentlyViewed = emptyList(),
+            networkStatus = ConnectivityObserver.Status.Available,
             onRefresh = {},
             onNavigateToSaved = {},
             onNavigateToSettings = {},
-            onSaveCoupon = {}
+            onSaveCoupon = {},
+            onProductClick = {}
         )
     }
 }

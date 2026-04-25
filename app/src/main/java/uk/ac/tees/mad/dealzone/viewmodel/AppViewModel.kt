@@ -11,6 +11,9 @@ import uk.ac.tees.mad.dealzone.Model.Product
 import uk.ac.tees.mad.dealzone.Model.ResultState
 import uk.ac.tees.mad.dealzone.data.AuthRepository
 import uk.ac.tees.mad.dealzone.domain.Repo.Repo
+import uk.ac.tees.mad.dealzone.util.ConnectivityObserver
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 data class ProductsUiState(
     val isLoading: Boolean = false,
@@ -20,14 +23,33 @@ data class ProductsUiState(
 
 class AppViewModel(
     private val repo: Repo,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
+
+    val recentlyViewed = repo.getRecentlyViewedProducts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _networkStatus = MutableStateFlow(ConnectivityObserver.Status.Unavailable)
+    val networkStatus: StateFlow<ConnectivityObserver.Status> = _networkStatus.asStateFlow()
 
     private val _uiState = MutableStateFlow(ProductsUiState())
     val uiState: StateFlow<ProductsUiState> = _uiState.asStateFlow()
 
     init {
         getProducts()
+        observeConnectivity()
+    }
+
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            connectivityObserver.observe().collect { status ->
+                _networkStatus.value = status
+                if (status == ConnectivityObserver.Status.Available) {
+                    getProducts()
+                }
+            }
+        }
     }
 
     fun getProducts() {
@@ -62,11 +84,21 @@ class AppViewModel(
         }
     }
 
-    class Factory(private val repo: Repo, private val authRepository: AuthRepository) : ViewModelProvider.Factory {
+    fun markProductAsViewed(product: Product) {
+        viewModelScope.launch {
+            repo.markProductAsViewed(product)
+        }
+    }
+
+    class Factory(
+        private val repo: Repo,
+        private val authRepository: AuthRepository,
+        private val connectivityObserver: ConnectivityObserver
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AppViewModel::class.java)) {
-                return AppViewModel(repo, authRepository) as T
+                return AppViewModel(repo, authRepository, connectivityObserver) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
